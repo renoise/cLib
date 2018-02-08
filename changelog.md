@@ -3,6 +3,7 @@
 ## 0.52
 
 - Add `changelog.md`
+- `cLib.require()`, use for avoiding circular dependencies
 - `cTable.is_indexed()`: check if table keys are exclusively numerical
 - Add `cPersistence`, a replacement for `cDocument` (now deprecated)
 - `cReflection`: several fixes/changes:
