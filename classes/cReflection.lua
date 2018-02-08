@@ -22,26 +22,25 @@ class 'cReflection'
 -- @return bool, true when copied
 
 function cReflection.copy_object_properties(from_class,to_class,level)
+  TRACE("cReflection.copy_object_properties(from_class,to_class,level)",from_class,to_class,level)
 
   if (type(from_class) ~= type(to_class))then
     LOG("*** Classes need to be of an identical type:",
       type(from_class),type(to_class))
     return false
   end
-
-  local level = level or 0
-  local max_level = 1
-  local capture = cReflection.get_object_info(from_class)
-
+  
   local copy_property = function(val,target_class,prop_name)
     target_class[prop_name] = val
   end
-
-  local iter = capture:gmatch("([%a_]+)")
-  for prop in iter do
+  
+  local level = level or 0
+  local max_level = 1
+  local props = cReflection.get_object_info(from_class)
+  for _,prop in ipairs(props) do
     if (prop:find("_observable")) then
       -- skip observables 
-    elseif not cReflection.is_standard_type(type(from_class[prop])) then
+    elseif not cReflection.is_standard_type(from_class[prop]) then
       if (level < max_level) then
         cReflection.copy_object_properties(from_class[prop],to_class[prop],level+1)
       end
@@ -61,6 +60,7 @@ end
 -- cast variable as basic datatype (boolean,number,string)
 
 function cReflection.cast_value(val,val_type)
+  TRACE("cReflection.cast_value(val,val_type)",val,val_type)
 
   if (val_type == "boolean") then
     if (type(val) == "boolean") then
@@ -98,55 +98,85 @@ end
 -- @return table
 
 function cReflection.get_object_properties(class,level)
+  TRACE("cReflection.get_object_properties(class,level)",class,level)
 
-  local level = level or 0
-  local max_level = 1
-  local capture = cReflection.get_object_info(class)
   local props_table = {}
-  local iter = capture:gmatch("([%a_]+)")
-  for prop in iter do
-    if (prop:find("_observable")) then
-      -- skip observables 
-    elseif not cReflection.is_standard_type(type(class[prop])) then
-      if (level < max_level) then
-        props_table[prop] = cReflection.get_object_properties(class[prop],level+1)
+
+  local get_props_impl = function(class,level)
+    print("get_props_impl",class,level)
+    local level = level or 0
+    local max_level = 1
+    local props = cReflection.get_object_info(class)
+    for _,prop in ipairs(props) do
+      if (prop:find("_observable")) then
+        -- skip observables 
+        print("skipped observable property",prop)
+      elseif not cReflection.is_standard_type(class[prop]) then
+        if (level < max_level) then
+          props_table[prop] = get_props_impl(class[prop],level+1)
+        end
+      else
+        props_table[prop] = class[prop]
       end
-    else
-      props_table[prop] = class[prop]
-    end
+    end    
   end
 
+  get_props_impl(class,level)
   return props_table
 
 end
 
 ---------------------------------------------------------------------------------------------------
--- get information about native object (renoise API)
+-- get native object properties (renoise API)
+-- @return table or nil  
 
 function cReflection.get_object_info(class)
+  TRACE("cReflection.get_object_info(class)",class)
 
+  local rslt = {}
   local str = objinfo(class)
   local begin1,begin2 = str:find("properties:")
-  local end1 = str:find("methods:")
-  return str:sub(begin2+1,end1-1)
+  if begin2 then 
+    local end1 = str:find("methods:")
+    local capture = str:sub(begin2+1,end1-1)
+    for prop in capture:gmatch("([%a_]+)") do 
+      table.insert(prop)
+    end
+  end
+  return rslt
+end
+
+---------------------------------------------------------------------------------------------------
+-- @param val (any)
+-- @return boolean
+
+function cReflection.is_standard_type(val)
+
+  return table.find({
+    "nil",
+    "boolean",
+    "number",
+    "string",
+    "table",
+    "function",
+    "thread"
+  },type(val))
 
 end
 
 ---------------------------------------------------------------------------------------------------
--- @param val (string), the type we want to check
--- @return int, or nil if not a recognized type
+-- check if a given value is serializable
+-- @param val (any)
+-- @return boolean
 
-function cReflection.is_standard_type(val)
+function cReflection.is_serializable_type(val)
 
-    return table.find({
-      "nil",
-      "boolean",
-      "number",
-      "string",
-      "table",
-      "function",
-      "thread"
-    },val) 
+  return table.find({
+    "boolean",
+    "number",
+    "string",
+    "table",
+  },type(val))
 
 end
 
