@@ -146,6 +146,18 @@ function cTable.bounds(t)
     end
   end
   return lowest,highest 
+  
+end
 
+---------------------------------------------------------------------------------------------------
+-- Check if a given table is indexed (exclusively with numerical indices)
+
+function cTable.is_indexed(t)
+  local i = 0
+  for _ in pairs(t) do
+    i = i + 1
+    if t[i] == nil then return false end
+  end
+  return true
 end
 
