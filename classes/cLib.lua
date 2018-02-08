@@ -18,10 +18,15 @@ therefore, it is recommended that any cLib-powered tool includes this file
 require (_clibroot.."cValue")
 require (_clibroot.."cNumber")
 
+---------------------------------------------------------------------------------------------------
+
 class 'cLib'
 
 --- placeholder value for nil, storable in table.
 cLib.NIL = {} 
+
+--- names of classes that have been loaded
+cLib.REQUIRED = {}
 
 ---------------------------------------------------------------------------------------------------
 -- [Static] LOG statement - invokes cLib.log(). 
@@ -61,6 +66,29 @@ function cLib.log(...)
   if not success then 
     print(...)
   end 
+
+end
+
+---------------------------------------------------------------------------------------------------
+-- alternative to require, which can be used to avoid circular dependencies
+-- only require when 'classname' is not already present globally, or in cLib
+
+function cLib.require(file)
+  TRACE('cLib.require(file)',file)
+
+  -- check if already present 
+  local success = pcall(function()
+    local patt = ".-[^\\/]-%.?([^%.\\/]*)%.[^.]*$"
+    _G[string.match("asf/12/3.lua",file)].tostring()
+  end)
+
+  local is_registered = table.find(cLib.REQUIRED,file)
+  if not success and not is_registered then 
+    require(file)
+  end 
+  if not is_registered then 
+    table.insert(cLib.REQUIRED,file)
+  end    
 
 end
 
