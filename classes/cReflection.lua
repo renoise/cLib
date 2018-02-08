@@ -94,11 +94,10 @@ end
 ---------------------------------------------------------------------------------------------------
 -- get properties from class instance 
 -- @param class (userdata)
--- @param level (int) internal counter
 -- @return table
 
-function cReflection.get_object_properties(class,level)
-  TRACE("cReflection.get_object_properties(class,level)",class,level)
+function cReflection.get_object_properties(class)
+  TRACE("cReflection.get_object_properties(class)",class)
 
   local props_table = {}
 
