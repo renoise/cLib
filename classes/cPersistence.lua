@@ -7,26 +7,14 @@
 Add the ability to store a class as serialized data 
 .
 
-# About cPersistence
+# How to use
 
-* Use it to add persistence to your class 
-* TODO: Define converters that allow upgrading classes 
+cPersistence makes it simple to add basic persistence to a class. 
 
-Note: this class is meant to replace the (now obsolete) `cDocument` class
+TODO: Provide an example 
 
-# How it works 
 
-To make your class support persistence, make it extend this class:
-
-  class 'MyClass' (cPersistence)
-
-Next, make sure that class properties are picked up 
-There are two fundamental approaches that can be used:
-1. Let cPersistence figure out which properties to save 
-2. In more advanced cases, specify a method called `obtain_definition` in your class 
-
-* The method is called , and should return a table with primitive values
-
+Note: this class is meant to replace the (now deprecated) `cDocument` class
 
 --]]
 
@@ -46,6 +34,53 @@ function cPersistence:__init()
 end
 
 ---------------------------------------------------------------------------------------------------
+-- load serialized string from disk
+-- @return boolean, true when loading succeeded
+-- @return string, when an error occurred
+
+function cPersistence:load(file_path)
+  TRACE("cPersistence:load(file_path)")
+  
+  -- confirm that file is valid
+  local str_def,err = cFilesystem.load_string(file_path)
+  --print(">>> load_definition - load_string - str_def,err",str_def,err)
+  local passed = self:looks_like_definition(str_def)
+  if not passed then
+    return false,("The file '%s' does not look like a definition"):format(file_path)
+  end
+  
+  -- load the definition
+  local passed,err = pcall(function()
+    assert(loadfile(file_path))
+  end) 
+  if not passed then
+    err = "*** Error: Failed to load the definition '"..file_path.."' - "..err
+    return false,err
+  end
+  
+  local def = assert(loadfile(file_path))()
+  self:assign_definition(def)
+  
+end
+
+---------------------------------------------------------------------------------------------------
+-- save serialized string to disk 
+-- @return boolean, true when loading succeeded
+-- @return string, when an error occurred
+
+function cPersistence:save(file_path)
+  TRACE("cPersistence:save(file_path)",file_path)
+
+  local got_saved,err = cFilesystem.write_string_to_file(file_path,self:serialize())
+  if not got_saved then
+    return false,err
+  end
+
+  return true
+
+end
+
+---------------------------------------------------------------------------------------------------
 -- @return string 
 
 function cPersistence:serialize()
@@ -56,39 +91,33 @@ function cPersistence:serialize()
 end
 
 ---------------------------------------------------------------------------------------------------
--- obtain a (serializable) table representation of the class
--- note: override this method to define your own implementation 
--- @return table 
-
-function cPersistence:obtain_definition()
-  TRACE("cPersistence:obtain_definition()")
-
-  local def = {}
-
-  for _,prop_name in ipairs(self.__PERSISTENCE) do 
-    print("obtain_definition - prop_name",prop_name)
-    local prop_def = cPersistence.obtain_property_definition(self[prop_name],prop_name)
-    if prop_def then 
-      def[prop_name] = prop_def
-    end
-  end
-  print("obtain_definition - def:",rprint(def))
-  return def
-
-end
-
----------------------------------------------------------------------------------------------------
--- assign values in table (e.g. when applying deserialized values)
+-- assign definition to class 
 -- @param t (table)
 
-function cPersistence:assign_definition(t)
-  TRACE("cPersistence:assign_definition(t)",t)
+function cPersistence:assign_definition(def)
+  TRACE("cPersistence:assign_definition(def)",def)
 
-  self.points = t.points
+  for _,prop_name in ipairs(self.__PERSISTENCE) do 
+    local prop_def = def[prop_name]
+    if prop_def.__type and prop_def.__version then 
+      --print(">>> looks like a persisted object",prop_name,prop_def.__type)
+      -- check if the type is available in the global scope 
+      if not rawget(_G,prop_def.__type) then 
+        renoise.app():show_warning(        
+          ("Could not instantiate: unknown class '%s'"):format(prop_def.__type))
+      else
+        self[prop_name] = _G[prop_def.__type]()
+        self[prop_name]:assign_definition(prop_def)
+      end
+    else
+      --print(">>> plain assignment",prop_name,prop_def)
+      self[prop_name] = prop_def
+    end
+  end
 
 end  
 
--------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------
 -- look for certain "things" to confirm that this is a valid definition
 -- @param str_def (string)
 -- @return bool
@@ -109,10 +138,33 @@ function cPersistence:looks_like_definition(str_def)
 end
 
 ---------------------------------------------------------------------------------------------------
+-- obtain a (serializable) table representation of the class
+-- note: override this method to define your own implementation 
+-- @return table 
+
+function cPersistence:obtain_definition()
+  TRACE("cPersistence:obtain_definition()")
+
+  -- core properties (always present)
+  local def = {
+    __type = type(self),
+    __version = self.__VERSION or 0
+  }
+
+  for _,prop_name in ipairs(self.__PERSISTENCE) do 
+    local prop_def = cPersistence.obtain_property_definition(self[prop_name],prop_name)
+    if prop_def then 
+      def[prop_name] = prop_def
+    end
+  end
+  return def
+
+end
+
+---------------------------------------------------------------------------------------------------
 
 function cPersistence.obtain_property_definition(prop,prop_name)
   TRACE("cPersistence.obtain_property_definition(prop,prop_name)",prop,prop_name)
-  print("type(prop)",type(prop))
 
   local def = {}
   if cReflection.is_serializable_type(prop) then
