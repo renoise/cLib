@@ -102,14 +102,13 @@ function cReflection.get_object_properties(class)
   local props_table = {}
 
   local get_props_impl = function(class,level)
-    print("get_props_impl",class,level)
     local level = level or 0
     local max_level = 1
     local props = cReflection.get_object_info(class)
     for _,prop in ipairs(props) do
       if (prop:find("_observable")) then
         -- skip observables 
-        print("skipped observable property",prop)
+        --print("skipped observable property",prop)
       elseif not cReflection.is_standard_type(class[prop]) then
         if (level < max_level) then
           props_table[prop] = get_props_impl(class[prop],level+1)
