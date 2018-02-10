@@ -7,14 +7,29 @@
 Add the ability to store a class as serialized data 
 .
 
-# How to use
+# How to use 
 
-cPersistence makes it simple to add basic persistence to a class. 
+First, extend your class, e.g. 
+```
+class 'MyClass' (cPersistence)
+```
 
-TODO: Provide an example 
+Next, choose how to/which properties to persist 
 
+  Method 1: Automatic (let cPersistence do the work)
+  
+    With this approach, you need to define a special __PERSISTENCE property. 
+    MyClass.__PERSISTENCE = {"foo","bar"}
 
-Note: this class is meant to replace the (now deprecated) `cDocument` class
+  Method 2: Define how to obtain and assign properties manually 
+
+    Specify (override) the following methods: 
+    cPersistence:obtain_definition()
+    cPersistence:assign_definition()
+
+Finally, you can override the serialize method as well, in case you want to 
+customize the resulting string. 
+
 
 --]]
 
@@ -23,15 +38,7 @@ Note: this class is meant to replace the (now deprecated) `cDocument` class
 require (_clibroot.."cTable")
 require (_clibroot.."cReflection")
 
-
 class 'cPersistence'
-
----------------------------------------------------------------------------------------------------
--- constructor
-
-function cPersistence:__init()
-
-end
 
 ---------------------------------------------------------------------------------------------------
 -- load serialized string from disk
@@ -92,28 +99,67 @@ end
 
 ---------------------------------------------------------------------------------------------------
 -- assign definition to class 
--- @param t (table)
+-- @param def (table)
+-- @param ref (object), where to assign values - 'self' if undefined
+-- @param _prop_names (table), 
 
-function cPersistence:assign_definition(def)
-  TRACE("cPersistence:assign_definition(def)",def)
+function cPersistence:assign_definition(def,_ref,_prop_names)
+  TRACE("cPersistence:assign_definition(def,_ref,_prop_names)",def,_ref,_prop_names)
 
-  for _,prop_name in ipairs(self.__PERSISTENCE) do 
-    local prop_def = def[prop_name]
-    if prop_def.__type and prop_def.__version then 
-      --print(">>> looks like a persisted object",prop_name,prop_def.__type)
-      -- check if the type is available in the global scope 
-      if not rawget(_G,prop_def.__type) then 
-        renoise.app():show_warning(        
-          ("Could not instantiate: unknown class '%s'"):format(prop_def.__type))
-      else
-        self[prop_name] = _G[prop_def.__type]()
-        self[prop_name]:assign_definition(prop_def)
-      end
+  -- assign to persisted object 
+  -- (first check if the type is available in global scope)
+  local create_class_instance = function(def,cname)
+    --print(">>> create_class_instance",def,cname)
+    if not rawget(_G,cname) then 
+      renoise.app():show_warning(        
+        ("Could not instantiate: unknown class '%s'"):format(cname))
     else
-      --print(">>> plain assignment",prop_name,prop_def)
-      self[prop_name] = prop_def
+      local ref = _G[cname]()
+      ref:assign_definition(def)
+      return ref
     end
   end
+
+  -- check if persisted object? note: only possible for nested entries,
+  -- we can't change the fundamental type of class from within
+  local cname = cPersistence.get_persisted_type(def)
+  --print("cname",cname)
+  if _ref and cname then 
+    return create_class_instance(def,cname)
+  end 
+
+  -- defined when recursing
+  _ref = _ref and _ref or self 
+  _prop_names = _prop_names and _prop_names or self.__PERSISTENCE
+
+  for _,prop_name in ipairs(_prop_names) do 
+    --print(">>> assign_definition - prop_name",prop_name)
+    local prop_def = def[prop_name]
+    local cname = cPersistence.get_persisted_type(prop_def)
+    if cname then 
+      --print(">>> looks like a persisted object",prop_name,cname)
+      _ref[prop_name] = create_class_instance(prop_def,cname)
+    else
+      if (type(prop_def)=="table" and cTable.is_indexed(prop_def)) then 
+        --print(">>> table assignment",prop_name,prop_def)
+        _ref[prop_name] = {}
+        for k,v in ipairs(prop_def) do 
+          -- pass an empty table as reference - this indicates that we are recursing
+          -- also, when recursing make sure we stay within the cPersistence scope 
+          -- (a class that have extended this one might have overridden the method)
+          local table_item_def = {}
+          table_item_def = cPersistence.assign_definition(self,v,table_item_def,table.keys(v))
+          --print("table_item_def",table_item_def)
+          table.insert(_ref[prop_name],table_item_def)
+        end
+      else
+        --print(">>> plain assignment",prop_name,prop_def)
+        _ref[prop_name] = prop_def
+      end
+    end
+  end
+
+  return _ref
 
 end  
 
@@ -126,9 +172,10 @@ function cPersistence:looks_like_definition(str_def)
   TRACE("cPersistence:looks_like_definition(str_def)",str_def)
 
   local pre = '\[?\"?'
-  local post = '\]?\"?[%s]*=[%s]*{'
+  local post = '\]?\"?[%s]*=[%s]'
 
   for _,prop_name in ipairs(self.__PERSISTENCE) do 
+    print("prop_name")
     if not string.find(str_def,pre..prop_name..post) then
       return false
     end
@@ -207,3 +254,34 @@ function cPersistence.obtain_property_definition(prop,prop_name)
 
 end
 
+---------------------------------------------------------------------------------------------------
+-- check if the provided definition refers to a persisted object 
+-- @param def (table)
+-- @return string or nil 
+
+function cPersistence.get_persisted_type(def)
+  --TRACE("cPersistence:get_persisted_type(def)",def)
+
+  return type(def)=="table" and def.__type
+
+end
+
+---------------------------------------------------------------------------------------------------
+-- attempt to determine type from first occurrence of '__type' in the file 
+-- @return string or nil 
+
+function cPersistence.determine_type(fpath)
+  TRACE("cPersistence.determine_type(fpath)",fpath)
+
+  local str_def,err = cFilesystem.load_string(fpath)
+  if err then 
+    return false,err
+  end 
+
+  local first = string.find(str_def,"__type")
+  local match = string.match(str_def.sub(str_def,first),' = "(%a+)"')
+  --print(match)  
+
+  return match
+
+end
