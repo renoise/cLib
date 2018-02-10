@@ -175,7 +175,6 @@ function cPersistence:looks_like_definition(str_def)
   local post = '\]?\"?[%s]*=[%s]'
 
   for _,prop_name in ipairs(self.__PERSISTENCE) do 
-    print("prop_name")
     if not string.find(str_def,pre..prop_name..post) then
       return false
     end
