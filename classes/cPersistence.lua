@@ -47,6 +47,8 @@ class 'cPersistence'
 
 function cPersistence:load(file_path)
   TRACE("cPersistence:load(file_path)")
+
+  assert(type(file_path)=="string")
   
   -- confirm that file is valid
   local str_def,err = cFilesystem.load_string(file_path)
@@ -78,6 +80,8 @@ end
 function cPersistence:save(file_path)
   TRACE("cPersistence:save(file_path)",file_path)
 
+  assert(type(file_path)=="string")
+  
   local got_saved,err = cFilesystem.write_string_to_file(file_path,self:serialize())
   if not got_saved then
     return false,err
@@ -106,6 +110,8 @@ end
 function cPersistence:assign_definition(def,_ref,_prop_names)
   TRACE("cPersistence:assign_definition(def,_ref,_prop_names)",def,_ref,_prop_names)
 
+  assert(type(def)=="table")
+  
   -- assign to persisted object 
   -- (first check if the type is available in global scope)
   local create_class_instance = function(def,cname)
@@ -131,6 +137,7 @@ function cPersistence:assign_definition(def,_ref,_prop_names)
   -- defined when recursing
   _ref = _ref and _ref or self 
   _prop_names = _prop_names and _prop_names or self.__PERSISTENCE
+  --print("_ref,_prop_names",_ref,rprint(_prop_names))
 
   for _,prop_name in ipairs(_prop_names) do 
     --print(">>> assign_definition - prop_name",prop_name)
@@ -171,6 +178,8 @@ end
 function cPersistence:looks_like_definition(str_def)
   TRACE("cPersistence:looks_like_definition(str_def)",str_def)
 
+  assert(type(str_def)=="string")
+  
   local pre = '\[?\"?'
   local post = '\]?\"?[%s]*=[%s]'
 
@@ -194,7 +203,6 @@ function cPersistence:obtain_definition()
   -- core properties (always present)
   local def = {
     __type = type(self),
-    __version = self.__VERSION or 0
   }
 
   for _,prop_name in ipairs(self.__PERSISTENCE) do 
@@ -271,6 +279,8 @@ end
 
 function cPersistence.determine_type(fpath)
   TRACE("cPersistence.determine_type(fpath)",fpath)
+
+  assert(type(fpath)=="string")
 
   local str_def,err = cFilesystem.load_string(fpath)
   if err then 
