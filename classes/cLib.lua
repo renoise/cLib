@@ -77,18 +77,18 @@ function cLib.require(file)
   TRACE('cLib.require(file)',file)
 
   -- check if already present 
-  local success = pcall(function()
-    local patt = ".-[^\\/]-%.?([^%.\\/]*)%.[^.]*$"
-    _G[string.match("asf/12/3.lua",file)].tostring()
+  local success,err = pcall(function()
+    local class_name = string.match(file,"[^\\/]*$")
+    tostring(_G[class_name])
   end)
 
   local is_registered = table.find(cLib.REQUIRED,file)
   if not success and not is_registered then 
+    if not is_registered then 
+      table.insert(cLib.REQUIRED,file)
+    end    
     require(file)
   end 
-  if not is_registered then 
-    table.insert(cLib.REQUIRED,file)
-  end    
 
 end
 
