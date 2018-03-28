@@ -96,28 +96,25 @@ end
 -- @param class (userdata)
 -- @return table
 
-function cReflection.get_object_properties(class)
-  TRACE("cReflection.get_object_properties(class)",class)
+function cReflection.get_object_properties(class,_level)
+  TRACE("cReflection.get_object_properties(class,_level)",class,_level)
 
   local props_table = {}
-
-  local get_props_impl = function(class,level)
-    local level = level or 0
-    local max_level = 1
-    local props = cReflection.get_object_info(class)
-    for _,prop in ipairs(props) do
-      if (prop:find("_observable")) then
-        -- skip observables 
-        --print("skipped observable property",prop)
-      elseif not cReflection.is_standard_type(class[prop]) then
-        if (level < max_level) then
-          props_table[prop] = get_props_impl(class[prop],level+1)
-        end
-      else
-        props_table[prop] = class[prop]
+  local level = _level or 0
+  local max_level = 1
+  local props = cReflection.get_object_info(class)
+  for _,prop in ipairs(props) do
+    if (prop:find("_observable")) then
+      -- skip observables 
+      --print("skipped observable property",prop)
+    elseif not cReflection.is_standard_type(class[prop]) then
+      if (level < max_level) then
+        props_table[prop] = cReflection.get_object_properties(class[prop],level+1)
       end
-    end    
-  end
+    else
+      props_table[prop] = class[prop]
+    end
+  end    
 
   get_props_impl(class,level)
   return props_table
