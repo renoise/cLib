@@ -138,7 +138,7 @@ function cReflection.get_object_info(class)
     local end1 = str:find("methods:")
     local capture = str:sub(begin2+1,end1-1)
     for prop in capture:gmatch("([%a_]+)") do 
-      table.insert(prop)
+      table.insert(rslt,prop)
     end
   end
   return rslt
