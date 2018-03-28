@@ -116,7 +116,6 @@ function cReflection.get_object_properties(class,_level)
     end
   end    
 
-  get_props_impl(class,level)
   return props_table
 
 end
