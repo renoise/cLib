@@ -57,6 +57,18 @@ function cReflection.copy_object_properties(from_class,to_class,level)
 end
 
 ---------------------------------------------------------------------------------------------------
+-- [Static] cast a value to boolean, provide fallback value if undefined
+-- (can be used for setting arguments)
+
+function cReflection.as_boolean(val,fallback)
+  if (type(val)=="nil") then 
+    return fallback
+  else 
+    return cReflection.cast_value(val,"boolean")
+  end
+end
+
+---------------------------------------------------------------------------------------------------
 -- cast variable as basic datatype (boolean,number,string)
 
 function cReflection.cast_value(val,val_type)
@@ -197,6 +209,22 @@ function cReflection.set_property(str,value)
 
 end
 
+---------------------------------------------------------------------------------------------------
+-- attempt to evaluate expression in string
+-- TODO run in sandbox 
+-- @return number or nil 
+
+function cReflection.evaluate_string(x)
+  TRACE("cReflection.evaluate_string(x)",x)
+  local num
+  local x_str = 'return '..x
+  if (pcall(loadstring(x_str)) == false or loadstring(x_str)()==nil) then  
+    return nil
+  else 
+    num=loadstring(x_str)()
+  end
+  return tonumber(num)
+end
 
 ---------------------------------------------------------------------------------------------------
 -- @param str (string), name of indentifier 
