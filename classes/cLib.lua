@@ -245,16 +245,33 @@ end
 ---------------------------------------------------------------------------------------------------
 -- [Static] Convert between note/hertz
 
-function cLib.note_to_hz(note)
+function cLib.note_to_hz(note,hz_ini)
   TRACE('cLib.note_to_hz(note)',note)
+  hz_ini = hz_ini or 440
   return math.pow(2, (note - 45) / 12) * 440;
 end
 
-function cLib.hz_to_note(freq)
+function cLib.hz_to_note(freq,hz_ini)
   TRACE('cLib.hz_to_note(freq)',freq)
+  hz_ini = hz_ini or 440
   return (math.log(freq) - math.log(440)) / math.log(2) + 4;
 end
 
+---------------------------------------------------------------------------------------------------
+-- [Static] Note to frames - e.g. 48 (C-4) -> 169
+-- will only be fully reliable when hz and sample_rate is provided as well 
+
+function cLib.note_to_frames(note,sample_rate,hz_ini)
+  TRACE("cLib.note_to_frames()",note,sample_rate,hz_ini)
+  if not hz_ini then 
+    hz_ini=440 
+  end
+  if not sample_rate then 
+    sample_rate=44100 
+  end 
+  return cLib.round_value(((1/2)^((note-57)/12)) * (sample_rate/hz_ini))
+end	 
+ 
 ---------------------------------------------------------------------------------------------------
 -- [Static] Greatest common divisor
 
@@ -293,6 +310,16 @@ end
 function cLib.round_value(num) 
   if num >= 0 then return math.floor(num+.5) 
   else return math.ceil(num-.5) end
+end
+
+---------------------------------------------------------------------------------------------------
+-- [Static] Round with precision (http://lua-users.org/wiki/SimpleRound)
+-- @param num (number)
+-- @param idp (number)
+
+function cLib.round_with_precision(num, idp)
+  local mult = 10 ^ (idp or 0)
+  return math.floor(num * mult + 0.5) / mult
 end
 
 ---------------------------------------------------------------------------------------------------
