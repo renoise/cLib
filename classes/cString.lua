@@ -120,6 +120,21 @@ function cString.get_sortable_time(tstamp)
 
 end
 
+---------------------------------------------------------------------------------------------------
+-- format "beat" in the same way as Renoise does it 
+--  e.g: [beat:line:fraction]
+-- @param val (number), 
+-- @return string 
+
+function cString.format_beat(val)
+  TRACE("cString.format_beat(val)",val)
+
+  local line = cLib.fraction(val)*(40/10)
+  local fract = cLib.fraction(line)*256
+  return ("%d.%d.%d"):format(math.floor(val),math.floor(line),fract)
+
+end
+
 --------------------------------------------------------------------------------
 -- Strip line matching pattern, from multiline string
 -- @param str (string) 
