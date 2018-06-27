@@ -108,6 +108,78 @@ function cTable.match_key(t,key)
 end
 
 ---------------------------------------------------------------------------------------------------
+-- [Static] find nearest value in table of numbers 
+-- @param t (table<number>) 
+-- @param val (number) 
+-- @return number,number (value,key)
+
+function cTable.nearest(t,val)
+  TRACE("cTable.nearest(t,val)",#t,val)
+
+  -- sort, but don't modify original table 
+  local vals = table.values(t)
+  table.sort(vals)
+
+  local prev,key
+  for k,v in ipairs(vals) do
+    if (v == val) then 
+      return v,k
+    end 
+    if (v > val) then 
+      -- return first (lowest)
+      if not prev then 
+        return v,k
+      end 
+      -- shortest distance to prev/curr
+      local d_prev = math.abs(prev-val)
+      local d_curr = math.abs(v-val)
+      if (math.min(d_prev,d_curr) == d_prev) then
+        return prev,k
+      else
+        return v,k
+      end
+    end
+    prev = v
+    key = k
+  end
+
+  return prev,key
+
+end
+
+---------------------------------------------------------------------------------------------------
+-- [Static] return next (higher value) in table of numbers 
+-- @param t (table<number>) 
+-- @param val (number) or nil
+
+function cTable.next(t,val)
+  TRACE("cTable.next(t,val)",#t,val)
+  local vals = table.values(t)
+  table.sort(vals)
+  local _,idx = cTable.nearest(vals,val)
+  --print("next - nearest idx",idx,rprint(vals))
+  if idx then
+    return vals[idx+1]
+  end
+end
+
+---------------------------------------------------------------------------------------------------
+-- [Static] return previous (lower value) in table of numbers 
+-- @param t (table<number>) 
+-- @param val (number) or nil
+
+function cTable.previous(t,val)
+  TRACE("cTable.previous(t,val)",#t,val)
+  local vals = table.values(t)
+  table.sort(vals)
+  local _,idx = cTable.nearest(vals,val)
+  --print("previous - nearest idx",idx)
+  if idx then
+    return vals[idx-1]
+  end
+end
+
+---------------------------------------------------------------------------------------------------
 -- [Static] Expand a multi-dimensional array with given keys
 -- @param t (table) 
 -- @param k1 (string) 
@@ -146,18 +218,6 @@ function cTable.bounds(t)
     end
   end
   return lowest,highest 
-  
-end
 
----------------------------------------------------------------------------------------------------
--- Check if a given table is indexed (exclusively with numerical indices)
-
-function cTable.is_indexed(t)
-  local i = 0
-  for _ in pairs(t) do
-    i = i + 1
-    if t[i] == nil then return false end
-  end
-  return true
 end
 
