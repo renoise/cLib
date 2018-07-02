@@ -22,6 +22,9 @@ require (_clibroot.."cNumber")
 
 class 'cLib'
 
+--- largest possible integer value
+cLib.HUGE_INT = 0xFFFFFFFF
+
 --- placeholder value for nil, storable in table.
 cLib.NIL = {} 
 
@@ -197,7 +200,7 @@ end
 ---------------------------------------------------------------------------------------------------
 -- [Static] 'Wrap/rotate' value within specified range
 -- (with a range of 64-127, a value of 128 should output 65)
--- TODO use % modulo to obtain offset
+-- TODO behave like modulo but supporting fractional values
 
 function cLib.wrap_value(value, min_value, max_value)
   local range = max_value - min_value + 1
@@ -213,10 +216,11 @@ end
 
 ---------------------------------------------------------------------------------------------------
 -- [Static] Determine the sign of a number
+-- TODO distinguish between -0 and 0 
 -- @return -1 if negative or 1 if positive
 
 function cLib.sign(x)
-    return (x<0 and -1) or 1
+  return (x<0 and -1) or 1
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -246,13 +250,13 @@ end
 -- [Static] Convert between note/hertz
 
 function cLib.note_to_hz(note,hz_ini)
-  TRACE('cLib.note_to_hz(note)',note)
+  TRACE('cLib.note_to_hz(note,hz_ini)',note,hz_ini)
   hz_ini = hz_ini or 440
   return math.pow(2, (note - 45) / 12) * 440;
 end
 
 function cLib.hz_to_note(freq,hz_ini)
-  TRACE('cLib.hz_to_note(freq)',freq)
+  TRACE('cLib.hz_to_note(freq,hz_ini)',freq,hz_ini)
   hz_ini = hz_ini or 440
   return (math.log(freq) - math.log(440)) / math.log(2) + 4;
 end
