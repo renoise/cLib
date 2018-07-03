@@ -194,7 +194,7 @@ end
 -- @return number
 
 function cLib.clamp_value(value, min_value, max_value)
-  return math.min(max_value, math.max(value, min_value))
+  return value < min_value and min_value or value > max_value and max_value or value
 end
 
 ---------------------------------------------------------------------------------------------------
