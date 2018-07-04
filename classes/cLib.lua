@@ -194,24 +194,15 @@ end
 -- @return number
 
 function cLib.clamp_value(value, min_value, max_value)
-  return math.min(max_value, math.max(value, min_value))
+  return value < min_value and min_value or value > max_value and max_value or value
 end
 
 ---------------------------------------------------------------------------------------------------
 -- [Static] 'Wrap/rotate' value within specified range
 -- (with a range of 64-127, a value of 128 should output 65)
--- TODO behave like modulo but supporting fractional values
 
 function cLib.wrap_value(value, min_value, max_value)
-  local range = max_value - min_value + 1
-  assert(range > 0, "invalid range")
-  while (value < min_value) do
-    value = value + range
-  end
-  while (value > max_value) do
-    value = value - range
-  end
-  return value
+  return (value-min_value) % (max_value-min_value) + min_value
 end
 
 ---------------------------------------------------------------------------------------------------
