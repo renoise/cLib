@@ -44,9 +44,6 @@ function cConvert.hz_to_note(freq,hz_ini)
 	if (cents > 50) then
 		cents = cents-100;
     note_num = note_num+1 
-		if (note_num>11) then 
-      note_num = note_num-12;
-    end
   end 
 
   return (note_num + 9) + (oct*12), cents
