@@ -320,7 +320,7 @@ end
 -- @return number
 
 function cLib.fraction(val)
-  return val-math.floor(val)
+  return val % 1
 end
 
 ---------------------------------------------------------------------------------------------------
