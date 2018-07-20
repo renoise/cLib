@@ -269,12 +269,12 @@ function cLib.least_common(t)
 end
 
 ---------------------------------------------------------------------------------------------------
--- [Static] Round value (from http://lua-users.org/wiki/SimpleRound)
+-- [Static] Round value
 -- @param num (number)
 
 function cLib.round_value(num) 
-  if num >= 0 then return math.floor(num+.5) 
-  else return math.ceil(num-.5) end
+  local frac = num % 1
+  return frac < 0.5 and num - frac or num + 1 - frac
 end
 
 ---------------------------------------------------------------------------------------------------
