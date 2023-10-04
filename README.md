@@ -6,7 +6,7 @@ The library contains methods for working with the file system, basic data-types 
 ## Documentation
 
 Point your browser to this location to browse the auto-generated luadocs:
-https://renoise.github.io/luadocs/clib
+https://renoise.github.io/libraries/clib/
 
 ## Debugging with cLib
 
